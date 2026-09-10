@@ -17,7 +17,7 @@ async function main() {
   // 1. Users
   const admin = await prisma.user.create({
     data: {
-      email: "admin@prompthub.local",
+      email: "admin@prompthub.io",
       username: "admin_cyber",
       passwordHash,
       role: "ADMIN",
@@ -26,7 +26,7 @@ async function main() {
 
   const author1 = await prisma.user.create({
     data: {
-      email: "alex.dev@prompthub.local",
+      email: "alex.dev@prompthub.io",
       username: "alex_architect",
       passwordHash,
       role: "USER",
@@ -35,7 +35,7 @@ async function main() {
 
   const author2 = await prisma.user.create({
     data: {
-      email: "olena.sec@prompthub.local",
+      email: "olena.sec@prompthub.io",
       username: "olena_sec",
       passwordHash,
       role: "USER",

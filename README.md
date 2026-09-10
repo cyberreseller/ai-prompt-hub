@@ -128,9 +128,9 @@ docker-compose up --build
 
 | Роль | Email / Логін | Пароль |
 | :--- | :--- | :--- |
-| **Адміністратор** | `admin@prompthub.local` / `admin_cyber` | `Password123!` |
-| **Розробник** | `alex.dev@prompthub.local` / `alex_architect` | `Password123!` |
-| **SecOps Інженер** | `olena.sec@prompthub.local` / `olena_sec` | `Password123!` |
+| **Адміністратор** | `admin@prompthub.io` / `admin_cyber` | `Password123!` |
+| **Розробник** | `alex.dev@prompthub.io` / `alex_architect` | `Password123!` |
+| **SecOps Інженер** | `olena.sec@prompthub.io` / `olena_sec` | `Password123!` |
 
 ---
 
