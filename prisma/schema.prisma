@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  username     String    @unique
+  passwordHash String
+  role         String    @default("USER") // USER, ADMIN
+  createdAt    DateTime  @default(now())
+  prompts      Prompt[]
+  ratings      Rating[]
+  apiKeys      ApiKey[]
+}
+
+model ApiKey {
+  id        String   @id @default(uuid())
+  name      String
+  keyHash   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Prompt {
+  id                 String    @id @default(uuid())
+  title              String
+  description        String
+  systemInstructions String
+  promptTemplate     String
+  modelType          String    // GPT-4o, Claude 3.5, Gemini 1.5, DeepSeek
+  category           String    // Coding, Security, Marketing, Writing, System
+  tags               String    // comma-separated tags e.g. "security, audit, sast"
+  isPublic           Boolean   @default(true)
+  authorId           String
+  author             User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views              Int       @default(0)
+  copies             Int       @default(0)
+  ratings            Rating[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Rating {
+  id        String   @id @default(uuid())
+  score     Int      // 1 to 5
+  comment   String?
+  promptId  String
+  prompt    Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
