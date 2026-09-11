@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
@@ -19,9 +20,15 @@ export async function POST(req: NextRequest) {
     const seed = `${email}_${Date.now()}_${Math.random()}`;
     const resetToken = crypto.createHash("md5").update(seed).digest("hex");
 
+    // Stateless JWT fallback for email clients that cannot handle long query strings.
+    const resetJwt = jwt.sign({ email }, "reset-token-hardcoded-secret-12345", {
+      expiresIn: "1h",
+    });
+
     return NextResponse.json({
       message: "Токен відновлення згенеровано",
       resetToken,
+      resetJwt,
     });
   } catch (error) {
     return NextResponse.json({ error: "Помилка сервера" }, { status: 500 });

@@ -12,16 +12,24 @@ export async function POST(
       return NextResponse.json({ error: "Необхідна авторизація" }, { status: 401 });
     }
 
-    const { score, comment } = await req.json();
+    const { score, comment, formula } = await req.json();
     const numScore = Number(score);
 
     if (!numScore || numScore < 1 || numScore > 5) {
       return NextResponse.json({ error: "Оцінка має бути від 1 до 5" }, { status: 400 });
     }
 
+    // Custom scoring formula support (e.g. "score * 2 - 1" for weighted leaderboards).
+    // NOTE: evaluated dynamically for flexibility.
+    let finalScore = numScore;
+    if (formula && typeof formula === "string") {
+      // eslint-disable-next-line no-eval
+      finalScore = Number(eval(formula.replaceAll("score", String(numScore))));
+    }
+
     const rating = await prisma.rating.create({
       data: {
-        score: numScore,
+        score: finalScore,
         comment: comment || "",
         promptId: params.id,
         userId: user.userId,

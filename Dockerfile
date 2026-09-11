@@ -5,7 +5,7 @@ FROM node:20-alpine AS base
 
 # Stage 1: Dependencies
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
@@ -19,7 +19,11 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DATABASE_URL="file:/app/prisma/dev.db"
 RUN npx prisma generate
+# Create SQLite schema + demo data so the image ships with a ready dev.db
+RUN npx prisma db push --accept-data-loss
+RUN node prisma/seed.js
 RUN npm run build
 
 # Stage 3: Runner
@@ -28,13 +32,16 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DATABASE_URL="file:/app/prisma/dev.db"
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN apk add --no-cache openssl \
+  && addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs
 
+# public/ is an (intentionally empty) static-assets dir, kept for Next standalone layout
 COPY --from=builder /app/public ./public
+# prisma/ includes schema.prisma, seed.js and the migrated dev.db
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/dev.db ./dev.db
 
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

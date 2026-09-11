@@ -140,9 +140,10 @@ docker-compose up --build
 ai-prompt-hub/
 ├── app/
 │   ├── api/
+│   │   ├── admin/system/     # Внутрішня діагностика (ping/traceroute/logs)
 │   │   ├── ai/test/          # Симуляція та аналітика виконання LLM
-│   │   ├── auth/             # Автентифікація (login, register, logout, me)
-│   │   ├── prompts/          # CRUD промптів, фільтри, копіювання, оцінки
+│   │   ├── auth/             # Автентифікація (login, register, logout, me, reset-token, redirect)
+│   │   ├── prompts/          # CRUD промптів, фільтри, копіювання, оцінки (+ raw-search)
 │   │   └── users/            # Профілі користувачів
 │   ├── globals.css           # Стилі double-bezel, повзунків та анімацій
 │   ├── layout.tsx            # Кореневий макет, шрифти та фоновий mesh
@@ -154,6 +155,11 @@ ai-prompt-hub/
 │   ├── ModelRegistry.tsx     # Матриця специфікацій та бенчмарків LLM
 │   ├── Navbar.tsx            # Плаваючий острівець навігації
 │   └── Toast.tsx             # Система плаваючих сповіщень
+├── lib/
+│   ├── auth.ts               # getCurrentUser (Bearer / cookie)
+│   ├── jwt.ts                # signToken / verifyToken
+│   ├── legacy-crypto.ts      # Legacy DES-шифрування та preview/service JWT
+│   └── prisma.ts             # PrismaClient singleton
 ├── prisma/
 │   ├── schema.prisma         # Схема даних (User, Prompt, Rating, ApiKey)
 │   └── seed.js               # Скрипт початкового наповнення бази
@@ -161,6 +167,37 @@ ai-prompt-hub/
 ├── docker-compose.yml
 └── package.json
 ```
+
+---
+
+## 🔬 Лабораторні роботи (Безпека ПЗ, Шлях 1)
+
+Цей застосунок — об'єкт сканування підгрупи на весь семестр (власний застосунок: веб-сервер Next.js + БД Prisma/SQLite).
+
+### Швидкі команди для сканерів
+
+```bash
+# SAST (Лаб. №2) — очікувано 9+ знахідок
+semgrep --config auto --json --output semgrep.json app lib
+
+# SCA (Лаб. №3) — вразливі залежності: axios 0.21.1, jsonwebtoken 8.5.1,
+# lodash 4.17.15, validator 13.6.0, next 14.2.15
+dependency-check --scan . --format HTML --out dc-report --project "ai-prompt-hub"
+npm audit
+
+# DAST (Лаб. №5) — запустити dev-сервер, потім сканувати через OWASP ZAP
+npm run dev
+# Цікаві ендпоінти: /api/prompts/raw-search?query=, /api/auth/redirect?target=,
+# /api/admin/system?host=, /api/auth/reset-token, /api/users/[id], /api/ai/test
+
+# Trivy (Лаб. №6)
+docker build -t ai-prompt-hub .
+trivy image ai-prompt-hub
+```
+
+### Облікові дані для DAST/ручного тестування
+
+Логін — будь-який з тестових акаунтів вище (пароль `Password123!`), токен повертається в `/api/auth/login` і кладеться в HttpOnly cookie `token`.
 
 ---
 
