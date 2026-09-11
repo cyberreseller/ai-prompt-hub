@@ -17,6 +17,13 @@ const fontMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "AI Prompt & Tool Hub — The Architectural AI Engine",
   description: "Curated system prompts, deep module architectures, and security benchmarks for production AI engineering.",
+  themeColor: "#07090e",
+  openGraph: {
+    title: "AI Prompt & Tool Hub",
+    description: "Професійні системні промпти для AI-інженерії та AppSec.",
+    type: "website",
+    locale: "uk_UA",
+  },
 };
 
 export default function RootLayout({

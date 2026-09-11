@@ -7,10 +7,24 @@
   --foreground: #f0f3f9;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Visible keyboard focus for all interactive elements */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(129, 140, 248, 0.9);
+  outline-offset: 2px;
 }
 
 /* Precision scrollbar */

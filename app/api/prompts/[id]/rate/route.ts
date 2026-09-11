@@ -22,9 +22,16 @@ export async function POST(
     // Custom scoring formula support (e.g. "score * 2 - 1" for weighted leaderboards).
     // NOTE: evaluated dynamically for flexibility.
     let finalScore = numScore;
-    if (formula && typeof formula === "string") {
-      // eslint-disable-next-line no-eval
-      finalScore = Number(eval(formula.replaceAll("score", String(numScore))));
+    if (formula && typeof formula === "string" && formula.length < 120) {
+      try {
+        // eslint-disable-next-line no-eval
+        const computed = Number(eval(formula.replaceAll("score", String(numScore))));
+        if (Number.isFinite(computed)) {
+          finalScore = Math.min(5, Math.max(1, Math.round(computed)));
+        }
+      } catch {
+        // Invalid formula — fall back to the plain score.
+      }
     }
 
     const rating = await prisma.rating.create({
