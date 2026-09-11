@@ -35,3 +35,11 @@ next-env.d.ts
 # prisma SQLite local runtime db
 prisma/*.db
 prisma/*.db-journal
+
+# internal documentation & private guides (never push to GitHub)
+APP_GUIDE.md
+*_GUIDE.md
+*.guide.md
+APP_DOCUMENTATION.md
+PROJECT_GUIDE.md
+
