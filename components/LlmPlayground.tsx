@@ -46,6 +46,21 @@ interface LlmPlaygroundProps {
   onToast: (msg: string) => void;
 }
 
+export const DEMO_VARIABLE_VALUES: Record<string, string> = {
+  language: "typescript",
+  code: `export async function handleLogin(req) {\n  const { email, password } = req.body;\n  const query = "SELECT * FROM users WHERE email = '" + email + "' AND password = '" + password + "'";\n  return await db.raw(query);\n}`,
+  plan: "Розділити моноліт на 3 мікросервіси зі спільною базою даних та синхронними HTTP-викликами без черг повідомлень.",
+  tools: "execute_sql, fetch_http, read_file, send_email, write_db",
+  stack: "Next.js 14, TypeScript, Prisma ORM, PostgreSQL, Docker",
+  feature_description: "Система динамічного обмеження швидкості запитів (Rate Limiting) за IP та двофакторна автентифікація TOTP",
+  agent_role: "DevSecOps Security & Compliance Auditor",
+  requirement: "Платіжна транзакція у статусах (Pending, Settled, Failed, Refunded) із суворою забороною повторної обробки (idempotency token) та аудиторським логом.",
+  crypto_scheme: "Генерація сесійного токена через MD5(timestamp + userId + Math.random()) з періодом ротації 24 години.",
+  decision_context: "Перехід від REST API до gRPC для внутрішнього зв'язку мікросервісів у зв'язку з високими навантаженнями (10k rps) та затримками JSON-серіалізації.",
+  api_changes: `{\n  "deprecated": "/v1/auth/login",\n  "new_endpoint": "/v2/auth/oauth/token",\n  "breaking": "Параметр 'username' замінено на 'grant_type' та 'client_id'",\n  "auth_header": "Bearer <JWT> замість Basic Auth"\n}`,
+  task_description: "Провести повний аудит вразливостей репозиторію, скласти таблицю ризиків OWASP, оновити залежності через PR та запустити димове тестування.",
+};
+
 export function LlmPlayground({ prompts, initialPrompt, onToast }: LlmPlaygroundProps) {
   const [selectedPromptId, setSelectedPromptId] = useState<string>(initialPrompt?.id || (prompts[0]?.id ?? "custom"));
   const [activeModel, setActiveModel] = useState<string>(initialPrompt?.modelType || "Claude 3.5 Sonnet");
@@ -95,6 +110,10 @@ export function LlmPlayground({ prompts, initialPrompt, onToast }: LlmPlayground
       setPromptTemplate("Проаналізуй наступний код на наявність вразливостей:\n```{{language}}\n{{code}}\n```");
       setSystemInstructions("Ти — провідний експерт з інформаційної безпеки.");
       setActiveModel("Claude 3.5 Sonnet");
+      setVariables({
+        language: "typescript",
+        code: DEMO_VARIABLE_VALUES.code,
+      });
       return;
     }
     const found = prompts.find((p) => p.id === id);
@@ -104,6 +123,15 @@ export function LlmPlayground({ prompts, initialPrompt, onToast }: LlmPlayground
       setActiveModel(found.modelType);
       setExecutionResult(null);
       setMetrics(null);
+
+      const vars = Array.from(
+        new Set((found.promptTemplate.match(/\{\{([a-zA-Z0-9_]+)\}\}/g) || []).map((v) => v.slice(2, -2)))
+      );
+      const newVars: Record<string, string> = {};
+      vars.forEach((v) => {
+        newVars[v] = DEMO_VARIABLE_VALUES[v] || "";
+      });
+      setVariables(newVars);
     }
   };
 
@@ -114,20 +142,18 @@ export function LlmPlayground({ prompts, initialPrompt, onToast }: LlmPlayground
 
   // Initialize variable defaults
   useEffect(() => {
-    const updated = { ...variables };
-    detectedVariables.forEach((v) => {
-      if (updated[v] === undefined) {
-        if (v === "language") updated[v] = "typescript";
-        else if (v === "code") updated[v] = `const token = req.query.token;\nconst user = await db.query("SELECT * FROM users WHERE token = '" + token + "'");`;
-        else if (v === "plan") updated[v] = "Розділити моноліт на 3 мікросервіси з синхронними HTTP-викликами між ними.";
-        else if (v === "tools") updated[v] = "execute_sql, fetch_http, read_file";
-        else if (v === "stack") updated[v] = "Next.js 14, Node.js, Prisma SQLite";
-        else if (v === "feature_description") updated[v] = "Двоетапна автентифікація через TOTP QR-код";
-        else updated[v] = "";
-      }
+    setVariables((prev) => {
+      const updated = { ...prev };
+      let changed = false;
+      detectedVariables.forEach((v) => {
+        if (updated[v] === undefined) {
+          updated[v] = DEMO_VARIABLE_VALUES[v] || "";
+          changed = true;
+        }
+      });
+      return changed ? updated : prev;
     });
-    setVariables(updated);
-  }, [promptTemplate]);
+  }, [promptTemplate, detectedVariables]);
 
   // Compile final prompt with substituted variables
   useEffect(() => {
@@ -143,18 +169,9 @@ export function LlmPlayground({ prompts, initialPrompt, onToast }: LlmPlayground
   };
 
   const handleFillDemoValues = () => {
-    const demos: Record<string, string> = {
-      language: "typescript",
-      code: `export async function handleLogin(req) {\n  const { email, password } = req.body;\n  const query = "SELECT * FROM users WHERE email = '" + email + "' AND password = '" + password + "'";\n  return await db.raw(query);\n}`,
-      plan: "Використовувати спільну базу даних для трьох незалежних сервісів без схеми міграцій.",
-      tools: "bash_exec, read_file, send_email, write_db",
-      stack: "Next.js 14, PostgreSQL, Docker Compose",
-      feature_description: "Система динамічного обмеження швидкості запитів (Rate Limiting) за IP",
-      agent_role: "DevSecOps Security Auditor",
-    };
-    const updated = { ...variables };
+    const updated: Record<string, string> = { ...variables };
     detectedVariables.forEach((v) => {
-      if (demos[v]) updated[v] = demos[v];
+      updated[v] = DEMO_VARIABLE_VALUES[v] || `Тестові вхідні дані для ${v}`;
     });
     setVariables(updated);
     onToast("Демо-значення підставлено!");
@@ -366,7 +383,7 @@ export function LlmPlayground({ prompts, initialPrompt, onToast }: LlmPlayground
                       <label className="block text-[11px] font-mono text-emerald-400 mb-1">
                         {`{{${v}}}`}
                       </label>
-                      {v === "code" || v === "plan" ? (
+                      {["code", "plan", "requirement", "decision_context", "api_changes", "task_description", "crypto_scheme"].includes(v) || (variables[v] && variables[v].includes("\n")) ? (
                         <textarea
                           rows={3}
                           value={variables[v] || ""}

@@ -16,7 +16,14 @@ export async function GET(req: NextRequest) {
     const rawSql = `SELECT * FROM Prompt WHERE title LIKE '%${query}%' OR description LIKE '%${query}%'`;
     const results: any = await prisma.$queryRawUnsafe(rawSql);
 
-    return NextResponse.json({ results });
+    return NextResponse.json(
+      { results },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Raw search error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

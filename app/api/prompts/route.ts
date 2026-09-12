@@ -54,7 +54,14 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ prompts: enriched });
+    return NextResponse.json(
+      { prompts: enriched },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error fetching prompts:", error);
     return NextResponse.json({ error: "Помилка завантаження промптів" }, { status: 500 });

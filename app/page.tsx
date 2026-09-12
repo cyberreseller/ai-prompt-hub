@@ -125,12 +125,14 @@ export default function Home() {
 
   useEffect(() => {
     fetchUser();
-    fetchPrompts();
+    const controller = new AbortController();
+    fetchPrompts(controller.signal);
+    return () => controller.abort();
   }, [category, model, searchQuery, useRawSearch]);
 
   const fetchUser = async () => {
     try {
-      const res = await fetch("/api/auth/me");
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
       const data = await res.json();
       setCurrentUser(data.user);
     } catch (err) {
@@ -138,26 +140,29 @@ export default function Home() {
     }
   };
 
-  const fetchPrompts = async () => {
+  const fetchPrompts = async (signal?: AbortSignal) => {
     setLoading(true);
     try {
-      let url = `/api/prompts?category=${category}&model=${model}`;
+      let url = `/api/prompts?category=${encodeURIComponent(category)}&model=${encodeURIComponent(model)}`;
       if (useRawSearch && searchQuery) {
         url = `/api/prompts/raw-search?query=${encodeURIComponent(searchQuery)}`;
-        const res = await fetch(url);
+        const res = await fetch(url, { signal, cache: "no-store" });
         const data = await res.json();
         setPrompts(data.results || []);
       } else {
         if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
-        const res = await fetch(url);
+        const res = await fetch(url, { signal, cache: "no-store" });
         const data = await res.json();
         setPrompts(data.prompts || []);
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
       console.error(err);
       showToast("Помилка завантаження списку промптів", "warning");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
@@ -359,6 +364,12 @@ export default function Home() {
   // Sort and filter prompts
   const sortedPrompts = useMemo(() => {
     let list = [...prompts];
+    if (category && category !== "All") {
+      list = list.filter((p) => p.category?.toLowerCase() === category.toLowerCase());
+    }
+    if (model && model !== "All") {
+      list = list.filter((p) => p.modelType === model);
+    }
     if (onlyFavorites) {
       list = list.filter((p) => favorites.includes(p.id));
     }
@@ -370,7 +381,7 @@ export default function Home() {
       list.sort((a, b) => (b.views || 0) - (a.views || 0));
     }
     return list;
-  }, [prompts, sortBy, onlyFavorites, favorites]);
+  }, [prompts, category, model, sortBy, onlyFavorites, favorites]);
 
   const categories = ["All", "Security", "Coding", "System", "Writing"];
   const models = [
