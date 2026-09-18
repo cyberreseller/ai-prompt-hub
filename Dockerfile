@@ -2,10 +2,10 @@
 # Production image suitable for Trivy scanning in Lab 6
 
 FROM node:20-alpine AS base
+RUN apk add --no-cache libc6-compat openssl
 
 # Stage 1: Dependencies
 FROM base AS deps
-RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
@@ -34,8 +34,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="file:/app/prisma/dev.db"
 
-RUN apk add --no-cache openssl \
-  && addgroup --system --gid 1001 nodejs \
+RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs
 
 # public/ is an (intentionally empty) static-assets dir, kept for Next standalone layout
