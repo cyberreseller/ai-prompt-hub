@@ -4,8 +4,9 @@ import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const user = getCurrentUser(req);
     if (!user) {
@@ -38,7 +39,7 @@ export async function POST(
       data: {
         score: finalScore,
         comment: comment || "",
-        promptId: params.id,
+        promptId: id,
         userId: user.userId,
       },
     });

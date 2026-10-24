@@ -5,11 +5,12 @@ import { getCurrentUser } from "@/lib/auth";
 // GET /api/prompts/[id]
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const prompt = await prisma.prompt.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         author: { select: { id: true, username: true } },
         ratings: {
@@ -26,7 +27,7 @@ export async function GET(
 
     // Increment views
     await prisma.prompt.update({
-      where: { id: params.id },
+      where: { id },
       data: { views: { increment: 1 } },
     });
 
@@ -39,8 +40,9 @@ export async function GET(
 // PUT /api/prompts/[id] - Update prompt
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const user = getCurrentUser(req);
     if (!user) {
@@ -50,11 +52,11 @@ export async function PUT(
     const data = await req.json();
 
     // MISSING: Check if user is the author or admin!
-    // const existing = await prisma.prompt.findUnique({ where: { id: params.id } });
+    // const existing = await prisma.prompt.findUnique({ where: { id } });
     // if (existing.authorId !== user.userId) return 403 Forbidden
 
     const updated = await prisma.prompt.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title: data.title,
         description: data.description,
@@ -75,8 +77,9 @@ export async function PUT(
 // DELETE /api/prompts/[id]
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const user = getCurrentUser(req);
     if (!user) {
@@ -84,7 +87,7 @@ export async function DELETE(
     }
 
     await prisma.prompt.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Промпт видалено" });
