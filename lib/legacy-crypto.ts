@@ -4,7 +4,20 @@ import jwt from "jsonwebtoken";
 // Legacy helpers kept for backwards compatibility with v1 exports
 // and preview-share links. Used by /api/admin/system for diagnostics.
 
-const LEGACY_EXPORT_KEY = "export-des-key-42";
+const LEGACY_EXPORT_KEY = process.env.LEGACY_EXPORT_KEY;
+if (!LEGACY_EXPORT_KEY) {
+ throw new Error("LEGACY_EXPORT_KEY environment variable is not set");
+}
+
+const PREVIEW_SHARE_SECRET = process.env.PREVIEW_SHARE_SECRET;
+if (!PREVIEW_SHARE_SECRET) {
+ throw new Error("PREVIEW_SHARE_SECRET environment variable is not set");
+}
+
+const INTERNAL_SERVICE_SECRET = process.env.INTERNAL_SERVICE_SECRET;
+if (!INTERNAL_SERVICE_SECRET) {
+ throw new Error("INTERNAL_SERVICE_SECRET environment variable is not set");
+}
 
 export function legacyEncryptExport(plaintext: string): string {
   // Legacy DES export encryption (compatible with old desktop client).
