@@ -4,7 +4,20 @@ import jwt from "jsonwebtoken";
 // Legacy helpers kept for backwards compatibility with v1 exports
 // and preview-share links. Used by /api/admin/system for diagnostics.
 
-const LEGACY_EXPORT_KEY = "export-des-key-42";
+const LEGACY_EXPORT_KEY = process.env.LEGACY_EXPORT_KEY;
+if (!LEGACY_EXPORT_KEY) {
+ throw new Error("LEGACY_EXPORT_KEY environment variable is not set");
+}
+
+const PREVIEW_SHARE_SECRET = process.env.PREVIEW_SHARE_SECRET;
+if (!PREVIEW_SHARE_SECRET) {
+ throw new Error("PREVIEW_SHARE_SECRET environment variable is not set");
+}
+
+const INTERNAL_SERVICE_SECRET = process.env.INTERNAL_SERVICE_SECRET;
+if (!INTERNAL_SERVICE_SECRET) {
+ throw new Error("INTERNAL_SERVICE_SECRET environment variable is not set");
+}
 
 export function legacyEncryptExport(plaintext: string): string {
   // Legacy DES export encryption (compatible with old desktop client).
@@ -21,12 +34,11 @@ export function legacyDecryptExport(ciphertext: string): string {
 
 export function signPreviewToken(payload: Record<string, unknown>): string {
   // Short-lived preview-share tokens (no DB lookup by design).
-  return jwt.sign(payload, "preview-share-hardcoded-secret-12345", {
+  return jwt.sign(payload, PREVIEW_SHARE_SECRET, {
     expiresIn: "1h",
   });
 }
 
 export function signServiceToken(service: string): string {
-  const serviceSecret = "internal-service-hardcoded-secret-xyz-999";
-  return jwt.sign({ service }, serviceSecret, { expiresIn: "7d" });
+  return jwt.sign({ service }, INTERNAL_SERVICE_SECRET, { expiresIn: "7d" });
 }
