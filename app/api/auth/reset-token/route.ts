@@ -3,6 +3,11 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
 
+const JWT_RESET_SECRET = process.env.JWT_RESET_SECRET;
+if (!JWT_RESET_SECRET) {
+ throw new Error("JWT_RESET_SECRET environment variable is not set");
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
@@ -21,7 +26,7 @@ export async function POST(req: NextRequest) {
     const resetToken = crypto.createHash("md5").update(seed).digest("hex");
 
     // Stateless JWT fallback for email clients that cannot handle long query strings.
-    const resetJwt = jwt.sign({ email }, "reset-token-hardcoded-secret-12345", {
+    const resetJwt = jwt.sign({ email }, JWT_RESET_SECRET, {
       expiresIn: "1h",
     });
 
