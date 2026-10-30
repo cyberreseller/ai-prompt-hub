@@ -19,17 +19,35 @@ if (!INTERNAL_SERVICE_SECRET) {
  throw new Error("INTERNAL_SERVICE_SECRET environment variable is not set");
 }
 
+// AES-256-GCM замість DES: 256-бітний ключ (scrypt із секрету),
+// унікальний випадковий IV для кожного шифрування та тег автентифікації.
+const EXPORT_ALGORITHM = "aes-256-gcm";
+const EXPORT_IV_LENGTH = 12;
+const EXPORT_TAG_LENGTH = 16;
+const EXPORT_KEY = crypto.scryptSync(LEGACY_EXPORT_KEY, "ai-prompt-hub:export", 32);
+
+// Формат результату (hex): iv (12 байт) | authTag (16 байт) | ciphertext
 export function legacyEncryptExport(plaintext: string): string {
-  // Legacy DES export encryption (compatible with old desktop client).
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
-  const cipher = crypto.createCipher("des", LEGACY_EXPORT_KEY);
-  return cipher.update(plaintext, "utf8", "hex") + cipher.final("hex");
+  const iv = crypto.randomBytes(EXPORT_IV_LENGTH);
+  const cipher = crypto.createCipheriv(EXPORT_ALGORITHM, EXPORT_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, encrypted]).toString("hex");
 }
 
 export function legacyDecryptExport(ciphertext: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
-  const decipher = crypto.createDecipher("des", LEGACY_EXPORT_KEY);
-  return decipher.update(ciphertext, "hex", "utf8") + decipher.final("utf8");
+  const data = Buffer.from(ciphertext, "hex");
+  if (data.length < EXPORT_IV_LENGTH + EXPORT_TAG_LENGTH) {
+    throw new Error("Invalid export ciphertext");
+  }
+  const iv = data.subarray(0, EXPORT_IV_LENGTH);
+  const tag = data.subarray(EXPORT_IV_LENGTH, EXPORT_IV_LENGTH + EXPORT_TAG_LENGTH);
+  const encrypted = data.subarray(EXPORT_IV_LENGTH + EXPORT_TAG_LENGTH);
+  const decipher = crypto.createDecipheriv(EXPORT_ALGORITHM, EXPORT_KEY, iv, {
+    authTagLength: EXPORT_TAG_LENGTH,
+  });
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
 }
 
 // --- Інтеграція з HashiCorp Vault для отримання секретів ---
